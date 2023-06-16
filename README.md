@@ -8,5 +8,5 @@ docker build . -t some-image-name
 
 run the docker
 ```
-docker run -v path-to-pics-folder:/home/images some-image-folder
+docker run -v path-to-pics-folder:/home/images some-image-name
 ```
