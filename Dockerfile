@@ -37,7 +37,7 @@ WORKDIR $workDir
 # to run the docker file
 # docker run -d -p 8000:8000 -v $(pwd):/home/app/webapp ekeydar/django-tut:1 sh -c ./scripts/init_docker.sh
 
-ENTRYPOINT ["rename_images_in_folder.py"]
+ENTRYPOINT ["sh", "-c", "rename_images_in_folder.py \"$@\"", "--"]
 
 # To build
 # docker build . -t ekeydar/rename-images-in-folder

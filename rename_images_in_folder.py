@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-#from PIL import Image
+# from PIL import Image
+import argparse
 import datetime
 import functools
 import glob
@@ -32,6 +33,16 @@ def get_date_taken(path):
         return None
 
 
+def parse_start_date(dt, idx):
+    try:
+        parts = [int(x) for x in dt.split('_')]
+        assert len(parts) == 6
+        return datetime.datetime(*parts) + datetime.timedelta(minutes=idx)
+    except Exception as ex:
+        print(f'failed in get_date_from_path for {dt}: {ex}')
+        return None
+
+
 def get_model(path):
     """ returns the manufactor """
     # try:
@@ -53,16 +64,19 @@ def get_ext(f):
     return os.path.splitext(f)[1].lower().lstrip('.')
 
 
-def format_date(f, dt_str, offset):
+def format_date(f, dt_str_or_dt, offset):
     # offset in minuets
     try:
-        dt = datetime.datetime.strptime(dt_str, '%Y:%m:%d %H:%M:%S')
+        if isinstance(dt_str_or_dt, datetime.datetime):
+            dt = dt_str_or_dt
+        else:
+            dt = datetime.datetime.strptime(dt_str_or_dt, '%Y:%m:%d %H:%M:%S')
         if offset:
             dt = dt + datetime.timedelta(minutes=offset)
         return dt.strftime('%Y_%m_%d_%H_%M_%S')
     except ValueError:
         print('Failed to extract datetime for file %s' % f)
-        return dt_str.replace(':', '_').replace(' ', '_')
+        return dt_str_or_dt.replace(':', '_').replace(' ', '_')
 
 
 def rename_current_folder(ns):
@@ -71,7 +85,7 @@ def rename_current_folder(ns):
     total_count = len(photo_files)
     for idx, f in enumerate(photo_files, start=1):
         try:
-            handle_file(f, ns)
+            handle_file(f, ns, idx)
             if idx % 10 == 0:
                 print(f'So far {idx}/{total_count}')
         except Exception as e:
@@ -86,8 +100,11 @@ def get_checksum(filename):
     return hash_md5.hexdigest()
 
 
-def handle_file(f, ns):
-    dt = get_date_taken(f)
+def handle_file(f, ns, idx):
+    if ns.start_date:
+        dt = parse_start_date(ns.start_date, idx)
+    else:
+        dt = get_date_taken(f)
     ext = get_ext(f)
     checksum = get_checksum(f)
     if dt:
@@ -122,16 +139,16 @@ def handle_file(f, ns):
             prefix = 'no_dt'
         to_name = '%s_%s.%s' % (prefix, checksum[0:6], ext)
     if f != to_name:
-        if ns.verbose:
+        if ns.verbose or ns.dry:
             print(f'Rename {f} to {to_name}')
-        os.rename(f, to_name)
+        if not ns.dry:
+            os.rename(f, to_name)
     else:
-        if ns.verbose:
+        if ns.verbose or ns.dry:
             print(f'same file {f} - no op')
 
 
 def main():
-    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--offset', type=float)
     parser.add_argument('--offset-minutes', type=float)
@@ -141,6 +158,8 @@ def main():
     parser.add_argument('--use-mtime', action='store_true')
     parser.add_argument('--use-date', type=str)
     parser.add_argument('--verbose', action='store_true', default=False)
+    parser.add_argument('--start-date', type=str, default=None)
+    parser.add_argument('--dry', action='store_true', default=False)
     ns = parser.parse_args()
     print(ns)
     if ns.cd:
