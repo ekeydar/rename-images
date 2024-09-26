@@ -11,8 +11,8 @@ RUN mkdir -p $scriptsDir
 WORKDIR $scriptsDir  
 
 # set environment variables  
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1  
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1  
 
 # install packages
 RUN apt-get update 
